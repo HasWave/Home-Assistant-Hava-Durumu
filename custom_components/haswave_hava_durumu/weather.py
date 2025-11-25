@@ -1,6 +1,8 @@
 """Weather platform for HasWave Hava Durumu."""
 from __future__ import annotations
 
+import logging
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.weather import WeatherEntity, Forecast
@@ -10,6 +12,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
 from .const import DOMAIN, WMO_TO_HA_CONDITION
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def wmo_to_condition(wmo_code: int, precipitation: float = 0, snowfall: float = 0) -> str:
@@ -99,9 +103,17 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
     def forecast(self) -> list[Forecast] | None:
         """Return the forecast."""
         if not self.coordinator.data:
+            _LOGGER.debug("Forecast: Coordinator data is None")
             return None
         
+        # API'den gelen veri formatını kontrol et
+        _LOGGER.debug(f"Forecast: Coordinator data keys: {list(self.coordinator.data.keys())}")
+        
         daily = self.coordinator.data.get('daily', {})
+        if not daily:
+            _LOGGER.warning("Forecast: 'daily' key not found in coordinator data")
+            return None
+        
         times = daily.get('time', [])
         max_temps = daily.get('temperature_2m_max', [])
         min_temps = daily.get('temperature_2m_min', [])
@@ -109,19 +121,53 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         precip = daily.get('precipitation_sum', [])
         snow = daily.get('snowfall_sum', [])
         
+        _LOGGER.debug(f"Forecast: Found {len(times)} days of forecast data")
+        
+        if not times:
+            _LOGGER.warning("Forecast: No time data found in daily forecast")
+            return None
+        
         forecast = []
         for i in range(min(len(times), 7)):
-            code = int(codes[i]) if i < len(codes) else 0
-            p = float(precip[i]) if i < len(precip) else 0
-            s = float(snow[i]) if i < len(snow) else 0
-            
-            forecast.append({
-                'datetime': times[i],
-                'condition': wmo_to_condition(code, p, s),
-                'temperature': float(max_temps[i]) if i < len(max_temps) else None,
-                'templow': float(min_temps[i]) if i < len(min_temps) else None,
-                'precipitation': p if p > 0 else None,
-            })
+            try:
+                code = int(codes[i]) if i < len(codes) and codes[i] is not None else 0
+                p = float(precip[i]) if i < len(precip) and precip[i] is not None else 0.0
+                s = float(snow[i]) if i < len(snow) and snow[i] is not None else 0.0
+                
+                # Tarih string'ini datetime objesine çevir
+                time_str = times[i]
+                if not time_str:
+                    _LOGGER.warning(f"Forecast: Empty time string at index {i}")
+                    continue
+                
+                try:
+                    # "2025-11-25" formatı
+                    if isinstance(time_str, str):
+                        dt = datetime.strptime(time_str, "%Y-%m-%d")
+                    else:
+                        dt = time_str
+                except (ValueError, TypeError) as e:
+                    _LOGGER.warning(f"Forecast: Tarih parse hatası: {time_str}, Hata: {e}")
+                    continue
+                
+                max_temp = float(max_temps[i]) if i < len(max_temps) and max_temps[i] is not None else None
+                min_temp = float(min_temps[i]) if i < len(min_temps) and min_temps[i] is not None else None
+                
+                forecast_item: Forecast = {
+                    'datetime': dt,
+                    'condition': wmo_to_condition(code, p, s),
+                    'temperature': max_temp,
+                    'templow': min_temp,
+                    'precipitation': p if p > 0 else None,
+                }
+                
+                forecast.append(forecast_item)
+                _LOGGER.debug(f"Forecast: Added day {i+1}: {time_str}, {max_temp}°/{min_temp}°, {forecast_item['condition']}")
+                
+            except (IndexError, ValueError, TypeError) as e:
+                _LOGGER.warning(f"Forecast: Error processing day {i}: {e}")
+                continue
         
-        return forecast
+        _LOGGER.debug(f"Forecast: Returning {len(forecast)} forecast items")
+        return forecast if forecast else None
 
