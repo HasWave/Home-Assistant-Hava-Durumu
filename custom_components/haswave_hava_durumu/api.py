@@ -35,9 +35,15 @@ class HasWaveHavaDurumuAPI:
             response = requests.get(DEFAULT_API_URL, params=params, timeout=15)
             
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                _LOGGER.debug(f"API response keys: {list(data.keys())}")
+                if 'daily' in data:
+                    _LOGGER.debug(f"Daily forecast keys: {list(data['daily'].keys())}")
+                    _LOGGER.debug(f"Daily time count: {len(data['daily'].get('time', []))}")
+                return data
             else:
                 _LOGGER.error(f"HTTP hatası: {response.status_code}")
+                _LOGGER.error(f"Response: {response.text[:200]}")
                 
         except Exception as e:
             _LOGGER.error(f"API bağlantı hatası: {e}")
