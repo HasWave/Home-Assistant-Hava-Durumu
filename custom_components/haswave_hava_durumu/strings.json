@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Hava Durumu Yapılandırması",
+        "description": "Hava durumu bilgilerini almak için konum bilgilerini girin. Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
+        "data": {
+          "latitude": "Enlem",
+          "longitude": "Boylam",
+          "timezone": "Zaman Dilimi",
+          "forecast_days": "Tahmin Günü",
+          "update_interval": "Güncelleme Aralığı (saniye)"
+        },
+        "data_description": {
+          "latitude": "Enlem değeri (örn: 41.0082). Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
+          "longitude": "Boylam değeri (örn: 28.9784). Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
+          "timezone": "Zaman dilimi (varsayılan: Europe/Istanbul). Örn: Europe/Istanbul, America/New_York, Asia/Tokyo",
+          "forecast_days": "Kaç günlük tahmin gösterileceği (varsayılan: 7, maksimum: 16)",
+          "update_interval": "Veri güncelleme aralığı saniye cinsinden (varsayılan: 3600 = 1 saat)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "API'ye bağlanılamadı. Lütfen bilgilerinizi kontrol edin.",
+      "unknown": "Beklenmeyen bir hata oluştu."
+    },
+    "abort": {
+      "already_configured": "Bu entegrasyon zaten yapılandırılmış."
+    }
+  }
+}
+
