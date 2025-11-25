@@ -20,18 +20,26 @@ PLATFORMS: list[Platform] = [Platform.WEATHER]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HasWave Hava Durumu from a config entry."""
     
-    latitude = entry.data.get("latitude")
-    longitude = entry.data.get("longitude")
+    api_url = entry.data.get("api_url", "https://api.haswave.com/api/v1/hava-durumu")
+    city = entry.data.get("city")
+    district = entry.data.get("district")
     
-    # Eğer konum yoksa, Home Assistant'tan al
-    if not latitude or not longitude:
+    # İl/İlçe belirtilmediyse, Home Assistant konumunu kullan
+    if not city:
         latitude = hass.config.latitude
         longitude = hass.config.longitude
-        timezone = hass.config.time_zone
+        _LOGGER.info(f"İl/İlçe belirtilmedi, Home Assistant konumu kullanılıyor: {latitude}, {longitude}")
     else:
-        timezone = entry.data.get("timezone", "Europe/Istanbul")
+        latitude = None
+        longitude = None
+        _LOGGER.info(f"İl/İlçe bilgisi kullanılıyor. İl: {city}, İlçe: {district or 'Belirtilmedi'}")
+    
+    timezone = entry.data.get("timezone", hass.config.time_zone or "Europe/Istanbul")
     
     api = HasWaveHavaDurumuAPI(
+        api_url=api_url,
+        city=city,
+        district=district,
         latitude=latitude,
         longitude=longitude,
         timezone=timezone,
@@ -42,7 +50,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     async def async_update_data():
         """Fetch data from API."""
-        return await hass.async_add_executor_job(api.fetch_weather_data)
+        try:
+            data = await hass.async_add_executor_job(api.fetch_weather_data)
+            if data:
+                _LOGGER.debug(f"API'den hava durumu verisi alındı")
+            else:
+                _LOGGER.warning("API'den veri alınamadı")
+            return data
+        except Exception as err:
+            _LOGGER.error(f"Veri güncelleme hatası: {err}")
+            raise
     
     coordinator = DataUpdateCoordinator(
         hass,
@@ -52,7 +69,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=timedelta(seconds=update_interval),
     )
     
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception as err:
+        _LOGGER.error(f"İlk veri yükleme hatası: {err}")
+        # Hata olsa bile devam et, sensor'lar oluşturulsun
     
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "coordinator": coordinator,
