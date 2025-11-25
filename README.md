@@ -131,6 +131,77 @@ cards:
     forecast_type: daily
 ```
 
+#### Button-Card ile 5 Günlük Tahmin (JSON Iconları ile)
+
+Met.no gibi 5 günlük tahmini tek kartta göstermek için button-card kullanabilirsiniz:
+
+```yaml
+type: custom:button-card
+entity: weather.haswave_hava_durumu
+show_name: true
+show_state: false
+styles:
+  card:
+    - padding: 16px
+    - background: |
+        [[[
+          const condition = states['weather.haswave_hava_durumu'].state;
+          if (condition.includes('rainy') || condition.includes('pouring')) return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          if (condition.includes('snowy')) return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+          if (condition.includes('clear')) return 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
+          if (condition.includes('cloudy') || condition.includes('partlycloudy')) return 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
+          return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        ]]]
+custom_fields:
+  forecast: |
+    [[[
+      const forecast = states['weather.haswave_hava_durumu'].attributes.forecast || [];
+      const iconMap = {
+        'clear-day': '/local/json/sun.json',
+        'clear-night': '/local/json/moon.json',
+        'partlycloudy': '/local/json/cloudy-sun.json',
+        'cloudy': '/local/json/clouds.json',
+        'fog': '/local/json/fog.json',
+        'rainy': '/local/json/sun-rain.json',
+        'pouring': '/local/json/storm.json',
+        'snowy': '/local/json/snow.json',
+        'snowy-rainy': '/local/json/snow-rain.json',
+        'lightning': '/local/json/storm.json',
+        'lightning-rainy': '/local/json/storm.json'
+      };
+      
+      let html = '<div style="display: flex; justify-content: space-around; margin-top: 16px; flex-wrap: wrap; gap: 12px;">';
+      
+      for (let i = 0; i < Math.min(5, forecast.length); i++) {
+        const day = forecast[i];
+        if (!day || !day.datetime) continue;
+        
+        const date = new Date(day.datetime);
+        const dayName = date.toLocaleDateString('tr-TR', { weekday: 'short' });
+        const icon = iconMap[day.condition] || '/local/json/cloud.json';
+        
+        html += `
+          <div style="text-align: center; min-width: 70px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+            <div style="font-size: 11px; color: rgba(255,255,255,0.9); margin-bottom: 8px; font-weight: 500;">${dayName}</div>
+            <lord-icon src="${icon}" trigger="hover" style="width:40px;height:40px;filter: brightness(0) invert(1);"></lord-icon>
+            <div style="font-size: 13px; font-weight: bold; color: white; margin-top: 8px;">
+              ${Math.round(day.temperature || 0)}°<span style="font-size: 11px; opacity: 0.8;">/${Math.round(day.templow || 0)}°</span>
+            </div>
+            ${day.precipitation ? `<div style="font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px;">💧 ${Math.round(day.precipitation)}mm</div>` : ''}
+          </div>
+        `;
+      }
+      
+      html += '</div>';
+      return html;
+    ]]]
+```
+
+**Not:** 
+- Bu örnek için [button-card](https://github.com/custom-cards/button-card) ve [lord-icon](https://github.com/tailwindlabs/heroicons) eklentilerini yüklemeniz gerekir
+- JSON iconları `/config/www/json/` klasörüne kopyalanmalıdır (entegrasyon ile birlikte gelir)
+- Lord-icon script'i HTML'de yüklenmelidir: `<script src="https://cdn.lordicon.com/lordicon.js"></script>`
+
 ### Otomasyon Örnekleri
 
 #### Yağmur Uyarısı
@@ -277,4 +348,3 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 ⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!
 
 Made with ❤️ by HasWave
-
