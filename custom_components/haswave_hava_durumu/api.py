@@ -1,176 +1,51 @@
-"""Weather platform for HasWave Hava Durumu."""
+"""API client for HasWave Hava Durumu."""
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any
+import requests
 
-from homeassistant.components.weather import WeatherEntity, Forecast
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
-from homeassistant.util import dt as dt_util
-
-from .const import DOMAIN, WMO_TO_HA_CONDITION
+from .const import DEFAULT_API_URL
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def wmo_to_condition(wmo_code: int, precipitation: float = 0, snowfall: float = 0) -> str:
-    """Convert WMO weather code to Home Assistant condition."""
-    base_condition = WMO_TO_HA_CONDITION.get(wmo_code, 'unknown')
+class HasWaveHavaDurumuAPI:
+    """API client for HasWave Hava Durumu."""
     
-    if precipitation > 0 and snowfall > 0:
-        return 'snowy-rainy'
+    def __init__(self, latitude: float, longitude: float, timezone: str, forecast_days: int = 7) -> None:
+        """Initialize the API client."""
+        self.latitude = latitude
+        self.longitude = longitude
+        self.timezone = timezone
+        self.forecast_days = forecast_days
     
-    return base_condition
-
-
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the weather platform."""
-    coordinator: DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    
-    async_add_entities([HasWaveHavaDurumuWeather(coordinator, entry.entry_id)])
-
-
-class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
-    """Representation of a HasWave Hava Durumu weather entity."""
-    
-    def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str) -> None:
-        """Initialize the weather entity."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{DOMAIN}_{entry_id}_weather"
-        self._attr_name = "Hava Durumu"
-    
-    @property
-    def condition(self) -> str:
-        """Return the current condition."""
-        if not self.coordinator.data:
-            return 'unknown'
-        
-        current = self.coordinator.data.get('current', {})
-        code = int(current.get('weather_code', 0))
-        precip = float(current.get('precipitation', 0))
-        snow = float(current.get('snowfall', 0))
-        
-        return wmo_to_condition(code, precip, snow)
-    
-    @property
-    def temperature(self) -> float | None:
-        """Return the temperature."""
-        if not self.coordinator.data:
-            return None
-        return float(self.coordinator.data.get('current', {}).get('temperature_2m', 0))
-    
-    @property
-    def temperature_unit(self) -> str:
-        """Return the unit of measurement."""
-        return "°C"
-    
-    @property
-    def humidity(self) -> int | None:
-        """Return the humidity."""
-        if not self.coordinator.data:
-            return None
-        return int(self.coordinator.data.get('current', {}).get('relative_humidity_2m', 0))
-    
-    @property
-    def pressure(self) -> float | None:
-        """Return the pressure."""
-        if not self.coordinator.data:
-            return None
-        return float(self.coordinator.data.get('current', {}).get('pressure_msl', 0))
-    
-    @property
-    def wind_speed(self) -> float | None:
-        """Return the wind speed."""
-        if not self.coordinator.data:
-            return None
-        return float(self.coordinator.data.get('current', {}).get('wind_speed_10m', 0))
-    
-    @property
-    def wind_bearing(self) -> int | None:
-        """Return the wind bearing."""
-        if not self.coordinator.data:
-            return None
-        return int(self.coordinator.data.get('current', {}).get('wind_direction_10m', 0))
-    
-    @property
-    def forecast(self) -> list[Forecast] | None:
-        """Return the forecast."""
-        if not self.coordinator.data:
-            _LOGGER.debug("Forecast: Coordinator data is None")
-            return None
-        
-        # API'den gelen veri formatını kontrol et
-        _LOGGER.debug(f"Forecast: Coordinator data keys: {list(self.coordinator.data.keys())}")
-        
-        daily = self.coordinator.data.get('daily', {})
-        if not daily:
-            _LOGGER.warning("Forecast: 'daily' key not found in coordinator data")
-            return None
-        
-        times = daily.get('time', [])
-        max_temps = daily.get('temperature_2m_max', [])
-        min_temps = daily.get('temperature_2m_min', [])
-        codes = daily.get('weather_code', [])
-        precip = daily.get('precipitation_sum', [])
-        snow = daily.get('snowfall_sum', [])
-        
-        _LOGGER.debug(f"Forecast: Found {len(times)} days of forecast data")
-        
-        if not times:
-            _LOGGER.warning("Forecast: No time data found in daily forecast")
-            return None
-        
-        forecast = []
-        for i in range(min(len(times), 7)):
-            try:
-                code = int(codes[i]) if i < len(codes) and codes[i] is not None else 0
-                p = float(precip[i]) if i < len(precip) and precip[i] is not None else 0.0
-                s = float(snow[i]) if i < len(snow) and snow[i] is not None else 0.0
+    def fetch_weather_data(self) -> dict[str, Any] | None:
+        """Fetch weather data from Open-Meteo API."""
+        try:
+            params = {
+                'latitude': self.latitude,
+                'longitude': self.longitude,
+                'timezone': self.timezone,
+                'forecast_days': self.forecast_days,
+                'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m',
+                'daily': 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant'
+            }
+            
+            response = requests.get(DEFAULT_API_URL, params=params, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                _LOGGER.debug(f"API response keys: {list(data.keys())}")
+                if 'daily' in data:
+                    _LOGGER.debug(f"Daily forecast keys: {list(data['daily'].keys())}")
+                    _LOGGER.debug(f"Daily time count: {len(data['daily'].get('time', []))}")
+                return data
+            else:
+                _LOGGER.error(f"HTTP hatası: {response.status_code}")
+                _LOGGER.error(f"Response: {response.text[:200]}")
                 
-                # Tarih string'ini datetime objesine çevir
-                time_str = times[i]
-                if not time_str:
-                    _LOGGER.warning(f"Forecast: Empty time string at index {i}")
-                    continue
-                
-                try:
-                    # "2025-11-25" formatı
-                    if isinstance(time_str, str):
-                        dt = datetime.strptime(time_str, "%Y-%m-%d")
-                        # Timezone-aware yap (local timezone)
-                        dt = dt_util.as_local(dt)
-                    else:
-                        dt = time_str
-                except (ValueError, TypeError) as e:
-                    _LOGGER.warning(f"Forecast: Tarih parse hatası: {time_str}, Hata: {e}")
-                    continue
-                
-                max_temp = float(max_temps[i]) if i < len(max_temps) and max_temps[i] is not None else None
-                min_temp = float(min_temps[i]) if i < len(min_temps) and min_temps[i] is not None else None
-                
-                forecast_item: Forecast = {
-                    'datetime': dt,
-                    'condition': wmo_to_condition(code, p, s),
-                    'temperature': max_temp,
-                    'templow': min_temp,
-                    'precipitation': p if p > 0 else None,
-                }
-                
-                forecast.append(forecast_item)
-                _LOGGER.debug(f"Forecast: Added day {i+1}: {time_str}, {max_temp}°/{min_temp}°, {forecast_item['condition']}")
-                
-            except (IndexError, ValueError, TypeError) as e:
-                _LOGGER.warning(f"Forecast: Error processing day {i}: {e}")
-                continue
+        except Exception as e:
+            _LOGGER.error(f"API bağlantı hatası: {e}")
         
-        _LOGGER.debug(f"Forecast: Returning {len(forecast)} forecast items")
-        return forecast if forecast else None
-
+        return None
