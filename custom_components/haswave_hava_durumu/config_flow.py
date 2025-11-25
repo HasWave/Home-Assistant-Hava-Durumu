@@ -19,10 +19,8 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Optional("api_url", default="https://api.haswave.com/api/v1/hava-durumu"): str,
-        vol.Optional("city"): str,  # İl adı
+        vol.Optional("city"): str,  # İl adı (opsiyonel - boş bırakılırsa Home Assistant konumu kullanılır)
         vol.Optional("district"): str,  # İlçe adı (opsiyonel)
-        vol.Optional("latitude"): vol.Coerce(float),  # Koordinat için
-        vol.Optional("longitude"): vol.Coerce(float),  # Koordinat için
         vol.Optional("timezone", default="Europe/Istanbul"): str,
         vol.Optional("forecast_days", default=DEFAULT_FORECAST_DAYS): int,
         vol.Optional("update_interval", default=DEFAULT_UPDATE_INTERVAL): int,
@@ -35,21 +33,16 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     api_url = data.get("api_url", "https://api.haswave.com/api/v1/hava-durumu")
     city = data.get("city")
     district = data.get("district")
-    latitude = data.get("latitude")
-    longitude = data.get("longitude")
     
-    # Eğer koordinat yoksa ve şehir de yoksa, Home Assistant'tan al
-    if not latitude or not longitude:
-        if not city:
-            latitude = hass.config.latitude
-            longitude = hass.config.longitude
-            _LOGGER.info(f"Koordinat bilgisi yok, Home Assistant konumu kullanılıyor: {latitude}, {longitude}")
-        else:
-            latitude = None
-            longitude = None
-            _LOGGER.info(f"İl/İlçe bilgisi kullanılacak. İl: {city}, İlçe: {district or 'Belirtilmedi'}")
+    # İl/İlçe belirtilmediyse, Home Assistant konumunu kullan
+    if not city:
+        latitude = hass.config.latitude
+        longitude = hass.config.longitude
+        _LOGGER.info(f"İl/İlçe belirtilmedi, Home Assistant konumu kullanılıyor: {latitude}, {longitude}")
     else:
-        _LOGGER.info(f"Koordinat bilgisi kullanılacak: {latitude}, {longitude}")
+        latitude = None
+        longitude = None
+        _LOGGER.info(f"İl/İlçe bilgisi kullanılacak. İl: {city}, İlçe: {district or 'Belirtilmedi'}")
     
     api = HasWaveHavaDurumuAPI(
         api_url=api_url,
@@ -78,7 +71,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         if district:
             title += f" / {district}"
     else:
-        title = f"HasWave Hava Durumu - {latitude:.2f}, {longitude:.2f}"
+        title = "HasWave Hava Durumu"
     
     return {"title": title}
 
