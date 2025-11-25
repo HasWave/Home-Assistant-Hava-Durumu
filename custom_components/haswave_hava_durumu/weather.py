@@ -45,9 +45,11 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         """Initialize the weather entity."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_weather"
-        # Entity ID'yi sabitlemek için name'i domain ile aynı yap
-        # Bu sayede entity_id "weather.haswave_hava_durumu" olur
-        self._attr_name = DOMAIN  # "haswave_hava_durumu"
+        # Entity ID'yi sabitlemek için name'i boş bırak veya domain kullan
+        # Entity registry entity ID'yi unique_id'den oluşturur
+        self._attr_name = "Hava Durumu"
+        # Entity ID'yi manuel olarak ayarla (opsiyonel - entity registry otomatik oluşturur)
+        # self.entity_id = f"weather.{DOMAIN}"
     
     @property
     def condition(self) -> str:
@@ -96,11 +98,23 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         return float(self.coordinator.data.get('current', {}).get('wind_speed_10m', 0))
     
     @property
+    def wind_speed_unit(self) -> str:
+        """Return the unit of measurement for wind speed."""
+        return "km/h"
+    
+    @property
     def wind_bearing(self) -> int | None:
         """Return the wind bearing."""
         if not self.coordinator.data:
             return None
         return int(self.coordinator.data.get('current', {}).get('wind_direction_10m', 0))
+    
+    @property
+    def apparent_temperature(self) -> float | None:
+        """Return the apparent temperature (hissedilen sıcaklık)."""
+        if not self.coordinator.data:
+            return None
+        return float(self.coordinator.data.get('current', {}).get('apparent_temperature', 0))
     
     @property
     def forecast(self) -> list[Forecast] | None:
@@ -123,6 +137,7 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         codes = daily.get('weather_code', [])
         precip = daily.get('precipitation_sum', [])
         snow = daily.get('snowfall_sum', [])
+        precip_prob = daily.get('precipitation_probability_max', [])
         
         _LOGGER.debug(f"Forecast: Found {len(times)} days of forecast data")
         
@@ -136,6 +151,7 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
                 code = int(codes[i]) if i < len(codes) and codes[i] is not None else 0
                 p = float(precip[i]) if i < len(precip) and precip[i] is not None else 0.0
                 s = float(snow[i]) if i < len(snow) and snow[i] is not None else 0.0
+                prob = float(precip_prob[i]) if i < len(precip_prob) and precip_prob[i] is not None else None
                 
                 # Tarih string'ini datetime objesine çevir
                 time_str = times[i]
@@ -164,6 +180,7 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
                     'temperature': max_temp,
                     'templow': min_temp,
                     'precipitation': p if p > 0 else None,
+                    'precipitation_probability': int(prob) if prob is not None else None,
                 }
                 
                 forecast.append(forecast_item)
