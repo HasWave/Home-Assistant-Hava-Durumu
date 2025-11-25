@@ -1,8 +1,8 @@
 """Constants for HasWave Hava Durumu integration."""
 
 DOMAIN = "haswave_hava_durumu"
-DEFAULT_API_URL = "https://api.open-meteo.com/v1/forecast"
-DEFAULT_UPDATE_INTERVAL = 3600
+DEFAULT_API_URL = "https://api.haswave.com/api/v1/hava-durumu"
+DEFAULT_UPDATE_INTERVAL = 1800  # 30 dakika - makul bir güncelleme aralığı
 DEFAULT_FORECAST_DAYS = 7
 
 # WMO Weather Code mapping
