@@ -35,7 +35,7 @@
 
 1. Home Assistant → **HACS** → **Integrations**
 2. Sağ üstteki **⋮** menüsünden **Custom repositories** seçin
-3. Repository URL: `https://github.com/HasWave/HACS-Hava-Durumu`
+3. Repository URL: `https://github.com/HasWave/Home-Assistant-Hava-Durumu`
 4. Category: **Integration** seçin
 5. **Add** butonuna tıklayın
 6. HACS → Integrations → **HasWave Hava Durumu**'nu bulun
@@ -277,3 +277,4 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 ⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!
 
 Made with ❤️ by HasWave
+
