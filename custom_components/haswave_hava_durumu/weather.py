@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, WMO_TO_HA_CONDITION
 
@@ -34,17 +35,19 @@ async def async_setup_entry(
     """Set up the weather platform."""
     coordinator: DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     
-    async_add_entities([HasWaveHavaDurumuWeather(coordinator)])
+    async_add_entities([HasWaveHavaDurumuWeather(coordinator, entry.entry_id)])
 
 
 class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
     """Representation of a HasWave Hava Durumu weather entity."""
     
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str) -> None:
         """Initialize the weather entity."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{DOMAIN}_weather"
-        self._attr_name = "Hava Durumu"
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_weather"
+        # Entity ID'yi sabitlemek için name'i domain ile aynı yap
+        # Bu sayede entity_id "weather.haswave_hava_durumu" olur
+        self._attr_name = DOMAIN  # "haswave_hava_durumu"
     
     @property
     def condition(self) -> str:
@@ -144,6 +147,8 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
                     # "2025-11-25" formatı
                     if isinstance(time_str, str):
                         dt = datetime.strptime(time_str, "%Y-%m-%d")
+                        # Timezone-aware yap (local timezone)
+                        dt = dt_util.as_local(dt)
                     else:
                         dt = time_str
                 except (ValueError, TypeError) as e:
