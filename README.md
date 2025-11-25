@@ -6,11 +6,11 @@
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.6%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Open-Meteo API ile hava durumu tahminlerini Home Assistant'a weather entity olarak ekler**
+**HasWave API ile hava durumu tahminlerini Home Assistant'a weather entity olarak ekler. Otomatik konum desteği ve 30 dakikada bir otomatik güncelleme.**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-<a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=HasWave&repository=Home-Assistant-Hava-Durumu/&category=Integration" target="_blank">
+<a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=HasWave&repository=Home-Assistant-Hava-Durumu&category=Integration" target="_blank">
   <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.">
 </a>
 
@@ -35,7 +35,7 @@
 
 1. Home Assistant → **HACS** → **Integrations**
 2. Sağ üstteki **⋮** menüsünden **Custom repositories** seçin
-3. Repository URL: `https://github.com/HasWave/Home-Assistant-Hava-Durumu/`
+3. Repository URL: `https://github.com/HasWave/Home-Assistant-Hava-Durumu`
 4. Category: **Integration** seçin
 5. **Add** butonuna tıklayın
 6. HACS → Integrations → **HasWave Hava Durumu**'nu bulun
@@ -46,7 +46,18 @@
 
 1. Bu repository'yi klonlayın veya indirin
 2. `custom_components/haswave_hava_durumu` klasörünü Home Assistant'ın `config/custom_components/` klasörüne kopyalayın
-3. Home Assistant'ı yeniden başlatın
+3. `www/json/` klasöründeki JSON animasyon dosyalarını Home Assistant'ın `config/www/json/` klasörüne kopyalayın
+4. `lordicon.js` dosyasını Home Assistant'ın `config/www/` klasörüne kopyalayın:
+   ```bash
+   # Linux/Mac
+   curl -o config/www/lordicon.js https://cdn.lordicon.com/lordicon.js
+   
+   # Windows (PowerShell)
+   Invoke-WebRequest -Uri "https://cdn.lordicon.com/lordicon.js" -OutFile "config\www\lordicon.js"
+   ```
+5. Home Assistant'ı yeniden başlatın
+
+**Not:** `lordicon.js` dosyası animasyonlu kartlar için gereklidir. HACS ile kurulumda otomatik olarak kopyalanır.
 
 ### 3️⃣ Integration Ekleme
 
@@ -54,23 +65,24 @@
 2. Sağ alttaki **+ ADD INTEGRATION** butonuna tıklayın
 3. **HasWave Hava Durumu** arayın ve seçin
 4. Yapılandırma formunu doldurun:
-   - **Latitude**: Enlem (opsiyonel - boş bırakılırsa Home Assistant konumu kullanılır)
-   - **Longitude**: Boylam (opsiyonel - boş bırakılırsa Home Assistant konumu kullanılır)
+   - **İl (Opsiyonel)**: İl adı (örn: TEKİRDAĞ, İSTANBUL). Boş bırakılırsa Home Assistant konumu otomatik kullanılır
+   - **İlçe (Opsiyonel)**: İlçe adı (örn: ÇORLU, KAPAKLI). Boş bırakılabilir
    - **Timezone**: Zaman dilimi (varsayılan: `Europe/Istanbul`)
    - **Forecast Days**: Tahmin günü (varsayılan: 7, maksimum: 16)
-   - **Update Interval**: Güncelleme aralığı saniye (varsayılan: 3600 = 1 saat)
+   - **Update Interval**: Güncelleme aralığı saniye (varsayılan: 1800 = 30 dakika)
 5. **Submit** butonuna tıklayın
 
 **✅ Weather Entity Otomatik Oluşturulur:** Integration eklendiğinde `weather.haswave_hava_durumu` entity'si direkt Home Assistant'a eklenir. Hiçbir ek kurulum gerekmez!
 
-**Not:** Konum bilgisi girilmezse, Home Assistant'ın ayarladığınız konum bilgisi (`Settings` → `General` → `Location`) otomatik kullanılır.
+**✅ Otomatik Konum:** İl/İlçe belirtilmezse, Home Assistant'ın ayarladığınız konum bilgisi (`Settings` → `General` → `Location`) otomatik kullanılır.
 
-### 4️⃣ Konum Bulma
+**✅ Otomatik Güncelleme:** Hava durumu verileri varsayılan olarak her 30 dakikada bir otomatik güncellenir.
 
-Konumunuzun koordinatlarını bulmak için:
-- [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api)
-- Google Maps'te konumunuza sağ tıklayıp koordinatları kopyalayın
-- [LatLong.net](https://www.latlong.net/)
+### 4️⃣ Konum Ayarları
+
+**Otomatik Konum:** İl/İlçe belirtilmezse, Home Assistant'ın genel ayarlarındaki konum bilgisi otomatik kullanılır (`Settings` → `General` → `Location`).
+
+**Manuel Konum:** Belirli bir il/ilçe için hava durumu görmek istiyorsanız, kurulum sırasında İl ve İlçe alanlarını doldurun.
 
 ## 📖 Kullanım
 
@@ -98,14 +110,14 @@ Integration otomatik olarak şu weather entity'yi oluşturur:
 **State:** Hava durumu durumu (clear-day, clear-night, partlycloudy, cloudy, fog, rainy, snowy, lightning, etc.)
 
 **Attributes:**
-- `temperature` - Sıcaklık (°C)
+- `temperature` - Sıcaklık (°C) - **Ana sıcaklık bilgisi**
+- `apparent_temperature` - Hissedilen sıcaklık (°C) - **Alt bilgi olarak gösterilir**
 - `humidity` - Nem (%)
 - `pressure` - Basınç (hPa)
-- `wind_speed` - Rüzgar hızı (km/h)
+- `wind_speed` - Rüzgar hızı (km/h) - **Birim otomatik gösterilir**
 - `wind_bearing` - Rüzgar yönü (°)
-- `apparent_temperature` - Hissedilen sıcaklık (°C)
 - `cloud_coverage` - Bulut örtüsü (%)
-- `forecast` - Günlük tahmin array'i
+- `forecast` - Günlük tahmin array'i (7-16 gün)
   - `datetime` - Tarih
   - `condition` - Hava durumu durumu
   - `temperature` - Maksimum sıcaklık (°C)
@@ -132,13 +144,37 @@ entity: weather.haswave_hava_durumu
 3. Weather entity'yi bulun ve gerçek entity ID'yi kopyalayın
 4. Dashboard kartında bu entity ID'yi kullanın
 
-#### Weather Forecast Card
+#### Weather Forecast Card (5 Günlük Tahmin)
+
+Met.no gibi 5 günlük tahmin göstermek için:
 
 ```yaml
 type: weather-forecast
 entity: weather.haswave_hava_durumu
 forecast_type: daily
 ```
+
+**Tüm Özellikler:**
+
+```yaml
+type: weather-forecast
+entity: weather.haswave_hava_durumu
+forecast_type: daily  # Günlük tahmin (daily) veya saatlik tahmin (hourly)
+name: 5 Günlük Hava Durumu
+show_current: true  # Güncel hava durumunu göster
+show_forecast: true  # Tahmini göster
+number_of_forecasts: 5  # Gösterilecek maksimum tahmin sayısı (1-7 arası)
+```
+
+**Özellik Açıklamaları:**
+- `forecast_type: daily` - Günlük tahmin (varsayılan) ✅
+- `forecast_type: hourly` - Saatlik tahmin (şu an desteklenmiyor, sadece günlük)
+- `show_current: true` - Güncel hava durumunu ve tahmini birlikte göster ✅
+- `show_current: false` - Sadece tahmini göster
+- `show_forecast: false` - Sadece güncel hava durumunu göster
+- `number_of_forecasts: 5` - Gösterilecek maksimum tahmin sayısı (1-7 arası) ✅
+
+**Not:** Weather entity düzgün çalışıyorsa, weather-forecast kartı otomatik olarak tüm bu özellikleri destekler. Kart ayarlarında (⋮ menüsü) bu seçenekleri görebilirsiniz.
 
 **Not:** Entity ID farklıysa (örneğin `weather.haswave_hava_durumu_xxxxx`), yukarıdaki entity ID'yi kullanın.
 
@@ -152,6 +188,76 @@ cards:
   - type: weather-forecast
     entity: weather.haswave_hava_durumu
     forecast_type: daily
+```
+
+#### Button-Card ile Mevcut Hava Durumu (Animasyonlu)
+
+Mevcut hava durumunu animasyonlu icon ile göstermek için:
+
+```yaml
+type: custom:button-card
+entity: weather.haswave_hava_durumu
+show_name: true
+show_state: false
+styles:
+  card:
+    - padding: 20px
+    - background: |
+        [[[
+          const condition = states['weather.haswave_hava_durumu'].state;
+          if (condition.includes('rainy') || condition.includes('pouring')) return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          if (condition.includes('snowy')) return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+          if (condition.includes('clear')) return 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
+          if (condition.includes('cloudy') || condition.includes('partlycloudy')) return 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
+          return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        ]]]
+custom_fields:
+  icon: |
+    [[[
+      return (function() {
+        // Lord-icon script'ini dinamik olarak yükle (entegrasyon ile birlikte gelir)
+        if (!window.lordiconLoaded) {
+          const script = document.createElement('script');
+          script.src = '/local/lordicon.js';
+          script.type = 'module';
+          document.head.appendChild(script);
+          window.lordiconLoaded = true;
+        }
+        
+        const condition = states['weather.haswave_hava_durumu'].state;
+        const iconMapping = {
+          'clear-day': '/local/json/sun.json',
+          'clear-night': '/local/json/moon.json',
+          'partlycloudy': '/local/json/cloudy-sun.json',
+          'cloudy': '/local/json/clouds.json',
+          'fog': '/local/json/fog.json',
+          'rainy': '/local/json/sun-rain.json',
+          'pouring': '/local/json/storm.json',
+          'snowy': '/local/json/snow.json',
+          'snowy-rainy': '/local/json/snow-rain.json',
+          'lightning': '/local/json/storm.json',
+          'lightning-rainy': '/local/json/storm.json'
+        };
+        const iconPath = iconMapping[condition] || '/local/json/cloud.json';
+        return `<lord-icon src="${iconPath}" trigger="loop" style="width:80px;height:80px;filter: brightness(0) invert(1);"></lord-icon>`;
+      })();
+    ]]]
+  temp: |
+    [[[
+      const temp = states['weather.haswave_hava_durumu'].attributes.temperature;
+      return `<div style="font-size: 48px; font-weight: bold; color: white; margin-top: 16px;">${Math.round(temp || 0)}°</div>`;
+    ]]]
+  details: |
+    [[[
+      const attrs = states['weather.haswave_hava_durumu'].attributes;
+      return `
+        <div style="display: flex; justify-content: space-around; margin-top: 16px; font-size: 14px; color: rgba(255,255,255,0.9);">
+          <div>💧 ${attrs.humidity || 0}%</div>
+          <div>🌬️ ${Math.round(attrs.wind_speed || 0)} km/h</div>
+          <div>📊 ${attrs.pressure || 0} hPa</div>
+        </div>
+      `;
+    ]]]
 ```
 
 #### Button-Card ile 5 Günlük Tahmin (JSON Iconları ile)
@@ -179,6 +285,15 @@ custom_fields:
   forecast: |
     [[[
       return (function() {
+        // Lord-icon script'ini dinamik olarak yükle (entegrasyon ile birlikte gelir)
+        if (!window.lordiconLoaded) {
+          const script = document.createElement('script');
+          script.src = '/local/lordicon.js';
+          script.type = 'module';
+          document.head.appendChild(script);
+          window.lordiconLoaded = true;
+        }
+        
         const forecastData = states['weather.haswave_hava_durumu'].attributes.forecast || [];
         const iconMapping = {
           'clear-day': '/local/json/sun.json',
@@ -223,9 +338,12 @@ custom_fields:
 ```
 
 **Not:** 
-- Bu örnek için [button-card](https://github.com/custom-cards/button-card) ve [lord-icon](https://github.com/tailwindlabs/heroicons) eklentilerini yüklemeniz gerekir
-- JSON iconları `/config/www/json/` klasörüne kopyalanmalıdır (entegrasyon ile birlikte gelir)
-- Lord-icon script'i HTML'de yüklenmelidir: `<script src="https://cdn.lordicon.com/lordicon.js"></script>`
+- Bu örnekler için [button-card](https://github.com/custom-cards/button-card) eklentisini yüklemeniz gerekir
+- **Lord-icon entegrasyon ile birlikte gelir**: `lordicon.js` dosyası entegrasyon ile birlikte `/local/lordicon.js` olarak yüklenir
+- **JSON animasyonları entegrasyon ile birlikte gelir**: `/local/json/` klasöründeki animasyonlar otomatik olarak kullanılabilir
+- **Otomatik yükleme**: Button-card örnekleri lord-icon script'ini otomatik olarak yükler, ek kurulum gerekmez
+- Animasyonlar hava durumuna göre otomatik olarak değişir (güneşli, yağmurlu, karlı, vb.)
+- Sıcaklık ve hava durumu bilgileri gerçek zamanlı olarak güncellenir
 
 ### Otomasyon Örnekleri
 
