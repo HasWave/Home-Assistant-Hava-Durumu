@@ -10,7 +10,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-<a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=HasWave&repository=HACS-Hava-Durumu&category=Integration" target="_blank">
+<a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=HasWave&repository=Home-Assistant-Hava-Durumu/&category=Integration" target="_blank">
   <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.">
 </a>
 
@@ -35,7 +35,7 @@
 
 1. Home Assistant → **HACS** → **Integrations**
 2. Sağ üstteki **⋮** menüsünden **Custom repositories** seçin
-3. Repository URL: `https://github.com/HasWave/Home-Assistant-Hava-Durumu`
+3. Repository URL: `https://github.com/HasWave/Home-Assistant-Hava-Durumu/`
 4. Category: **Integration** seçin
 5. **Add** butonuna tıklayın
 6. HACS → Integrations → **HasWave Hava Durumu**'nu bulun
@@ -74,6 +74,21 @@ Konumunuzun koordinatlarını bulmak için:
 
 ## 📖 Kullanım
 
+### Entegrasyon Nasıl Çalışır?
+
+HasWave Hava Durumu entegrasyonu şu şekilde çalışır:
+
+1. **Weather Entity Oluşturur**: Integration eklendiğinde `weather.haswave_hava_durumu` adında bir weather entity oluşturulur
+2. **Open-Meteo API Kullanır**: Hava durumu verileri [Open-Meteo API](https://open-meteo.com/)'den çekilir (ücretsiz, API key gerektirmez)
+3. **Otomatik Güncelleme**: Belirlediğiniz aralıklarla (varsayılan: 1 saat) otomatik olarak veriler güncellenir
+4. **7-16 Günlük Tahmin**: Günlük hava durumu tahminleri `forecast` attribute'unda saklanır
+5. **WMO Kodları**: API'den gelen WMO weather code'ları Home Assistant condition'larına dönüştürülür
+
+**Oluşturulan Entity:**
+- `weather.haswave_hava_durumu` - Ana weather entity (sensor değil, weather entity)
+
+**Sensor Oluşturmaz:** Bu entegrasyon sensor oluşturmaz, sadece bir weather entity oluşturur. Weather entity'ler Home Assistant'ın native hava durumu formatıdır ve `weather-forecast` kartları ile kullanılabilir.
+
 ### Home Assistant Weather Entity
 
 Integration otomatik olarak şu weather entity'yi oluşturur:
@@ -111,6 +126,12 @@ type: weather
 entity: weather.haswave_hava_durumu
 ```
 
+**Not:** Eğer "Unknown type encountered: weather" hatası alırsanız:
+1. Settings → Devices & Services → Entities
+2. "haswave" ile arayın
+3. Weather entity'yi bulun ve gerçek entity ID'yi kopyalayın
+4. Dashboard kartında bu entity ID'yi kullanın
+
 #### Weather Forecast Card
 
 ```yaml
@@ -118,6 +139,8 @@ type: weather-forecast
 entity: weather.haswave_hava_durumu
 forecast_type: daily
 ```
+
+**Not:** Entity ID farklıysa (örneğin `weather.haswave_hava_durumu_xxxxx`), yukarıdaki entity ID'yi kullanın.
 
 #### Örnek Dashboard Yapılandırması
 
@@ -155,45 +178,47 @@ styles:
 custom_fields:
   forecast: |
     [[[
-      const forecast = states['weather.haswave_hava_durumu'].attributes.forecast || [];
-      const iconMap = {
-        'clear-day': '/local/json/sun.json',
-        'clear-night': '/local/json/moon.json',
-        'partlycloudy': '/local/json/cloudy-sun.json',
-        'cloudy': '/local/json/clouds.json',
-        'fog': '/local/json/fog.json',
-        'rainy': '/local/json/sun-rain.json',
-        'pouring': '/local/json/storm.json',
-        'snowy': '/local/json/snow.json',
-        'snowy-rainy': '/local/json/snow-rain.json',
-        'lightning': '/local/json/storm.json',
-        'lightning-rainy': '/local/json/storm.json'
-      };
-      
-      let html = '<div style="display: flex; justify-content: space-around; margin-top: 16px; flex-wrap: wrap; gap: 12px;">';
-      
-      for (let i = 0; i < Math.min(5, forecast.length); i++) {
-        const day = forecast[i];
-        if (!day || !day.datetime) continue;
+      return (function() {
+        const forecastData = states['weather.haswave_hava_durumu'].attributes.forecast || [];
+        const iconMapping = {
+          'clear-day': '/local/json/sun.json',
+          'clear-night': '/local/json/moon.json',
+          'partlycloudy': '/local/json/cloudy-sun.json',
+          'cloudy': '/local/json/clouds.json',
+          'fog': '/local/json/fog.json',
+          'rainy': '/local/json/sun-rain.json',
+          'pouring': '/local/json/storm.json',
+          'snowy': '/local/json/snow.json',
+          'snowy-rainy': '/local/json/snow-rain.json',
+          'lightning': '/local/json/storm.json',
+          'lightning-rainy': '/local/json/storm.json'
+        };
         
-        const date = new Date(day.datetime);
-        const dayName = date.toLocaleDateString('tr-TR', { weekday: 'short' });
-        const icon = iconMap[day.condition] || '/local/json/cloud.json';
+        let resultHtml = '<div style="display: flex; justify-content: space-around; margin-top: 16px; flex-wrap: wrap; gap: 12px;">';
         
-        html += `
-          <div style="text-align: center; min-width: 70px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-            <div style="font-size: 11px; color: rgba(255,255,255,0.9); margin-bottom: 8px; font-weight: 500;">${dayName}</div>
-            <lord-icon src="${icon}" trigger="hover" style="width:40px;height:40px;filter: brightness(0) invert(1);"></lord-icon>
-            <div style="font-size: 13px; font-weight: bold; color: white; margin-top: 8px;">
-              ${Math.round(day.temperature || 0)}°<span style="font-size: 11px; opacity: 0.8;">/${Math.round(day.templow || 0)}°</span>
+        for (let idx = 0; idx < Math.min(5, forecastData.length); idx++) {
+          const forecastDay = forecastData[idx];
+          if (!forecastDay || !forecastDay.datetime) continue;
+          
+          const dayDate = new Date(forecastDay.datetime);
+          const dayNameStr = dayDate.toLocaleDateString('tr-TR', { weekday: 'short' });
+          const iconPath = iconMapping[forecastDay.condition] || '/local/json/cloud.json';
+          
+          resultHtml += `
+            <div style="text-align: center; min-width: 70px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+              <div style="font-size: 11px; color: rgba(255,255,255,0.9); margin-bottom: 8px; font-weight: 500;">${dayNameStr}</div>
+              <lord-icon src="${iconPath}" trigger="hover" style="width:40px;height:40px;filter: brightness(0) invert(1);"></lord-icon>
+              <div style="font-size: 13px; font-weight: bold; color: white; margin-top: 8px;">
+                ${Math.round(forecastDay.temperature || 0)}°<span style="font-size: 11px; opacity: 0.8;">/${Math.round(forecastDay.templow || 0)}°</span>
+              </div>
+              ${forecastDay.precipitation ? `<div style="font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px;">💧 ${Math.round(forecastDay.precipitation)}mm</div>` : ''}
             </div>
-            ${day.precipitation ? `<div style="font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px;">💧 ${Math.round(day.precipitation)}mm</div>` : ''}
-          </div>
-        `;
-      }
-      
-      html += '</div>';
-      return html;
+          `;
+        }
+        
+        resultHtml += '</div>';
+        return resultHtml;
+      })();
     ]]]
 ```
 
