@@ -3,8 +3,11 @@
     "step": {
       "user": {
         "title": "Hava Durumu Yapılandırması",
-        "description": "Hava durumu bilgilerini almak için konum bilgilerini girin. Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
+        "description": "Hava durumu bilgilerini almak için konum bilgilerini girin. İl/İlçe veya koordinat bilgisi girebilirsiniz. Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
         "data": {
+          "api_url": "API Adresi",
+          "city": "İl",
+          "district": "İlçe",
           "latitude": "Enlem",
           "longitude": "Boylam",
           "timezone": "Zaman Dilimi",
@@ -12,11 +15,14 @@
           "update_interval": "Güncelleme Aralığı (saniye)"
         },
         "data_description": {
-          "latitude": "Enlem değeri (örn: 41.0082). Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
-          "longitude": "Boylam değeri (örn: 28.9784). Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
+          "api_url": "HasWave Hava Durumu API endpoint adresi (varsayılan: https://api.haswave.com/api/v1/hava-durumu).",
+          "city": "İl adı (örn: TEKİRDAĞ, İSTANBUL). İl belirtildiğinde il/ilçe bazlı veriler kullanılır. Boş bırakılırsa koordinat bilgisi kullanılır.",
+          "district": "İlçe adı (örn: ÇORLU, KAPAKLI). İlçe belirtilmezse ilin öncelikli merkezi kullanılır. Boş bırakılabilir.",
+          "latitude": "Enlem değeri (örn: 41.0082). İl belirtilmediğinde koordinat bilgisi kullanılır. Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
+          "longitude": "Boylam değeri (örn: 28.9784). İl belirtilmediğinde koordinat bilgisi kullanılır. Boş bırakılırsa Home Assistant'ın konum ayarları kullanılır.",
           "timezone": "Zaman dilimi (varsayılan: Europe/Istanbul). Örn: Europe/Istanbul, America/New_York, Asia/Tokyo",
           "forecast_days": "Kaç günlük tahmin gösterileceği (varsayılan: 7, maksimum: 16)",
-          "update_interval": "Veri güncelleme aralığı saniye cinsinden (varsayılan: 3600 = 1 saat)"
+          "update_interval": "Veri güncelleme aralığı saniye cinsinden (varsayılan: 3600 = 1 saat). Önerilen: 1800-3600 saniye (30-60 dakika)"
         }
       }
     },
