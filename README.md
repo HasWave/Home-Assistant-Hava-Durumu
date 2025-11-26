@@ -480,7 +480,7 @@ Integration ayarlarından konum bilgisini güncelleyebilirsiniz. Konum boş bır
 ## 📁 Dosya Yapısı
 
 ```
-HACS-Hava-Durumu/
+Home-Assistant-Hava-Durumu/
 ├── custom_components/
 │   └── haswave_hava_durumu/
 │       ├── __init__.py
