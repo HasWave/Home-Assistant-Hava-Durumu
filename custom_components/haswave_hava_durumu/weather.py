@@ -83,10 +83,29 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         if not current:
             _LOGGER.warning("Temperature: 'current' key not found or empty")
             return None
-        temp = current.get('temperature_2m')
+        
+        # API'den gelen veriyi detaylı log'la
+        _LOGGER.debug(f"Temperature: Current data keys: {list(current.keys())}")
+        _LOGGER.debug(f"Temperature: Current data: {current}")
+        
+        # Farklı key isimlerini dene
+        temp = current.get('temperature_2m') or current.get('temperature') or current.get('temp')
+        
         if temp is None:
             _LOGGER.warning(f"Temperature: 'temperature_2m' is None. Current keys: {list(current.keys())}")
+            # Daily forecast'ten ilk günün max sıcaklığını dene (fallback)
+            daily = self.coordinator.data.get('daily', {})
+            if daily:
+                max_temps = daily.get('temperature_2m_max', [])
+                if max_temps and len(max_temps) > 0 and max_temps[0] is not None:
+                    try:
+                        temp_float = float(max_temps[0])
+                        _LOGGER.info(f"Temperature: Using daily forecast max temp as fallback: {temp_float}°C")
+                        return temp_float
+                    except (ValueError, TypeError):
+                        pass
             return None
+        
         try:
             temp_float = float(temp)
             _LOGGER.debug(f"Temperature: {temp_float}°C")
