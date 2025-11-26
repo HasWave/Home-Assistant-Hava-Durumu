@@ -102,14 +102,32 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         """Return the humidity."""
         if not self.coordinator.data:
             return None
-        return int(self.coordinator.data.get('current', {}).get('relative_humidity_2m', 0))
+        current = self.coordinator.data.get('current', {})
+        if not current:
+            return None
+        humidity = current.get('relative_humidity_2m')
+        if humidity is None:
+            return None
+        try:
+            return int(humidity)
+        except (ValueError, TypeError):
+            return None
     
     @property
     def pressure(self) -> float | None:
         """Return the pressure."""
         if not self.coordinator.data:
             return None
-        return float(self.coordinator.data.get('current', {}).get('pressure_msl', 0))
+        current = self.coordinator.data.get('current', {})
+        if not current:
+            return None
+        pressure = current.get('pressure_msl')
+        if pressure is None:
+            return None
+        try:
+            return float(pressure)
+        except (ValueError, TypeError):
+            return None
     
     @property
     def wind_speed(self) -> float | None:
