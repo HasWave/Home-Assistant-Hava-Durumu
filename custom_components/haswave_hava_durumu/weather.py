@@ -5,7 +5,11 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from homeassistant.components.weather import WeatherEntity, Forecast
+from homeassistant.components.weather import (
+    WeatherEntity,
+    Forecast,
+    WeatherEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -48,6 +52,8 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         # Entity ID'yi sabitlemek için name'i boş bırak veya domain kullan
         # Entity registry entity ID'yi unique_id'den oluşturur
         self._attr_name = "Hava Durumu"
+        # Weather-forecast kartı için gerekli özellikler
+        self._attr_supported_features = WeatherEntityFeature.FORECAST_DAILY
         # Entity ID'yi manuel olarak ayarla (opsiyonel - entity registry otomatik oluşturur)
         # self.entity_id = f"weather.{DOMAIN}"
     
