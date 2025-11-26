@@ -74,14 +74,22 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
     def temperature(self) -> float | None:
         """Return the temperature."""
         if not self.coordinator.data:
+            _LOGGER.debug("Temperature: Coordinator data is None")
             return None
         current = self.coordinator.data.get('current', {})
+        if not current:
+            _LOGGER.warning("Temperature: 'current' key not found or empty")
+            return None
         temp = current.get('temperature_2m')
         if temp is None:
+            _LOGGER.warning(f"Temperature: 'temperature_2m' is None. Current keys: {list(current.keys())}")
             return None
         try:
-            return float(temp)
-        except (ValueError, TypeError):
+            temp_float = float(temp)
+            _LOGGER.debug(f"Temperature: {temp_float}°C")
+            return temp_float
+        except (ValueError, TypeError) as e:
+            _LOGGER.warning(f"Temperature: Error converting {temp} to float: {e}")
             return None
     
     @property
@@ -129,9 +137,12 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
             return None
         return float(self.coordinator.data.get('current', {}).get('apparent_temperature', 0))
     
-    @property
-    def forecast(self) -> list[Forecast] | None:
-        """Return the forecast."""
+    async def async_forecast_daily(self) -> list[Forecast] | None:
+        """Return the daily forecast."""
+        return self._get_forecast()
+    
+    def _get_forecast(self) -> list[Forecast] | None:
+        """Return the forecast (internal method)."""
         if not self.coordinator.data:
             _LOGGER.debug("Forecast: Coordinator data is None")
             return None
@@ -205,4 +216,9 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         
         _LOGGER.debug(f"Forecast: Returning {len(forecast)} forecast items")
         return forecast if forecast else None
+    
+    @property
+    def forecast(self) -> list[Forecast] | None:
+        """Return the forecast (legacy property for compatibility)."""
+        return self._get_forecast()
 
