@@ -131,6 +131,44 @@ Integration otomatik olarak şu weather entity'yi oluşturur:
 
 ### Dashboard Kartı
 
+#### 1️⃣ Günlük Hava Durumu (Met.no Tarzı - Basit)
+
+Weather-forecast kartı kendi iconunu gösterir, sadece basit bir kart:
+
+```yaml
+type: weather-forecast
+entity: weather.haswave_hava_durumu
+forecast_type: daily
+show_current: true
+show_forecast: false
+```
+
+Veya sadece güncel hava durumunu göster:
+
+```yaml
+type: weather
+entity: weather.haswave_hava_durumu
+```
+
+#### 2️⃣ 5 Günlük Hava Durumu (Detaylı)
+
+Weather-forecast kartı otomatik olarak icon gösterir, 5 günlük tahmin:
+
+```yaml
+type: weather-forecast
+entity: weather.haswave_hava_durumu
+forecast_type: daily
+show_current: true
+show_forecast: true
+number_of_forecasts: 5
+```
+
+**Not:** Weather-forecast kartı otomatik olarak:
+- Her gün için icon gösterir (Home Assistant'ın native iconları)
+- Sıcaklık gösterir (max/min)
+- Hava durumu durumunu gösterir
+- Ayarlar menüsünden "tahmin türü", "gösterilecek hava durumu", "maksimum tahmin sayısı" gibi seçenekleri görebilirsiniz
+
 #### Weather Card (Güncel)
 
 ```yaml
