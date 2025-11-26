@@ -68,7 +68,10 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         precip = float(current.get('precipitation', 0))
         snow = float(current.get('snowfall', 0))
         
-        return wmo_to_condition(code, precip, snow)
+        condition = wmo_to_condition(code, precip, snow)
+        _LOGGER.debug(f"Condition: weather_code={code}, precipitation={precip}, snowfall={snow}, condition={condition}")
+        
+        return condition
     
     @property
     def temperature(self) -> float | None:
