@@ -69,7 +69,14 @@ class HasWaveHavaDurumuWeather(CoordinatorEntity, WeatherEntity):
         """Return the temperature."""
         if not self.coordinator.data:
             return None
-        return float(self.coordinator.data.get('current', {}).get('temperature_2m', 0))
+        current = self.coordinator.data.get('current', {})
+        temp = current.get('temperature_2m')
+        if temp is None:
+            return None
+        try:
+            return float(temp)
+        except (ValueError, TypeError):
+            return None
     
     @property
     def temperature_unit(self) -> str:
