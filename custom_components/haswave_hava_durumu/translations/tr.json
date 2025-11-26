@@ -1,0 +1,24 @@
+{
+  "state": {
+    "weather": {
+      "clear-day": "Açık",
+      "clear-night": "Açık Gece",
+      "cloudy": "Bulutlu",
+      "exceptional": "Olağanüstü",
+      "fog": "Sisli",
+      "hail": "Dolu",
+      "lightning": "Şimşek",
+      "lightning-rainy": "Şimşek ve Yağmurlu",
+      "partlycloudy": "Parçalı Bulutlu",
+      "pouring": "Sağanak Yağışlı",
+      "rainy": "Yağmurlu",
+      "snowy": "Karlı",
+      "snowy-rainy": "Karla Karışık Yağmurlu",
+      "sunny": "Güneşli",
+      "windy": "Rüzgarlı",
+      "windy-variant": "Rüzgarlı",
+      "unknown": "Bilinmiyor"
+    }
+  }
+}
+
